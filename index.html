@@ -225,7 +225,61 @@ td.ro:hover{background:transparent!important}
 .cfg-note{font-size:11px;color:var(--text3);margin-top:5px;line-height:1.5}
 .cfg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 
-@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.kpi-strip{grid-template-columns:repeat(3,1fr)}.grid-2,.overview-grid{grid-template-columns:1fr}.content{padding:16px}}
+
+/* MOBILE OVERLAY SIDEBAR */
+.mob-backdrop{display:none;position:fixed;inset:0;z-index:49;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);opacity:0;transition:opacity .25s;pointer-events:none}
+.mob-backdrop.open{opacity:1;pointer-events:auto}
+.mob-topbar{display:none;position:fixed;top:0;left:0;right:0;z-index:48;height:56px;background:var(--bg1);border-bottom:1px solid var(--border);align-items:center;padding:0 14px;gap:10px}
+.mob-menu-btn{width:36px;height:36px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .12s}
+.mob-menu-btn:active{background:var(--surface2);transform:scale(.94)}
+.mob-brand{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.mob-brand img{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.mob-brand-text{min-width:0}
+.mob-brand-text strong{display:block;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mob-brand-text span{display:block;font-size:10px;color:var(--text3);font-family:'Geist Mono',monospace}
+.mob-sync{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:9px;font-family:'Geist Mono',monospace;border:1px solid var(--border);color:var(--text3);background:var(--surface);white-space:nowrap;flex-shrink:0;cursor:pointer}
+.mob-sync.ok{color:var(--green);border-color:rgba(22,163,74,.3);background:rgba(22,163,74,.07)}
+.mob-sync.unsaved{color:var(--amber);border-color:rgba(217,119,6,.3);background:rgba(217,119,6,.08)}
+.mob-sync.busy{color:var(--accent);border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.07)}
+[data-theme="dark"] .mob-sync.ok{border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.07)}
+.mob-sync-dot{width:4px;height:4px;border-radius:50%;background:currentColor;flex-shrink:0}
+.mob-actions{display:none;position:fixed;bottom:0;left:0;right:0;z-index:47;background:var(--bg1);border-top:1px solid var(--border);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));gap:8px}
+.mob-actions.visible{display:flex}
+.mob-actions .btn{flex:1;justify-content:center;display:flex;align-items:center;gap:5px;padding:11px 8px;font-size:12px}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:50;width:280px;display:flex!important;box-shadow:none}
+  .sidebar.mob-open{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.25)}
+  .mob-topbar{display:flex}
+  .mob-backdrop{display:block}
+  .topbar{display:none!important}
+  .ro-banner{position:relative;top:0}
+  .main{margin-left:0!important;padding-top:56px}
+  .content{padding:14px!important;padding-bottom:84px!important}
+  .kpi-strip{grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin-bottom:14px!important}
+  .kpi{padding:14px 16px!important}
+  .kpi-val{font-size:22px!important}
+  .kpi-label{font-size:9px!important}
+  .grid-2{grid-template-columns:1fr!important;gap:10px!important;margin-bottom:10px!important}
+  .overview-grid{grid-template-columns:1fr!important;gap:10px!important}
+  .overview-full{grid-column:auto!important}
+  th{padding:7px 12px!important;font-size:8px!important}
+  td{padding:9px 12px!important;font-size:12px!important}
+  .ph{padding:11px 14px!important}
+  .ph-title{font-size:10px!important}
+  .met-label{padding:9px 14px!important;font-size:12px!important}
+  .met-val{padding:9px 14px!important;font-size:12px!important;min-width:60px!important}
+  .login-card{width:calc(100vw - 32px)!important;padding:32px 22px!important;border-radius:16px!important}
+  .ls-months{max-width:260px}
+  .ls-m{width:24px;height:24px;font-size:7px}
+}
+@media(min-width:769px){
+  .mob-topbar{display:none!important}
+  .mob-backdrop{display:none!important}
+  .mob-actions{display:none!important}
+  .sidebar{transform:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -302,8 +356,6 @@ td.ro:hover{background:transparent!important}
           </div>
         </div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost" onclick="loadFromSheets(curMonth,false)" id="btn-reload" style="display:none" title="Recarregar dados da planilha">⟳ Recarregar</button>
-          <button class="btn btn-ghost" onclick="showDebug()" id="btn-debug" style="display:none" title="Ver resposta raw do servidor">🔍 Debug</button>
           <button class="btn btn-ghost" onclick="exportCSV()" id="btn-csv" style="display:none">Exportar CSV</button>
           <button class="btn btn-accent" onclick="confirmSave()" id="btn-save" style="display:none">↑ Salvar na planilha</button>
         </div>
@@ -336,7 +388,6 @@ td.ro:hover{background:transparent!important}
       <div class="cfg-note">Leitura e escrita na planilha são feitas por este endpoint. Não requer API Key.</div>
     </div>
     <div class="cfg-actions">
-      <button class="btn btn-ghost" onclick="clearCacheReload()" style="color:var(--red);border-color:rgba(220,38,38,.3)" title="Apaga dados do localStorage e recarrega do servidor">🗑 Limpar cache</button>
       <button class="btn btn-ghost" onclick="closeConfig()">Cancelar</button>
       <button class="btn btn-ghost" onclick="testConnection()">Testar conexão</button>
       <button class="btn btn-accent" onclick="saveConfig()">Salvar</button>
@@ -346,7 +397,114 @@ td.ro:hover{background:transparent!important}
 
 <div id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+function closeMobSidebar(){
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('mob-backdrop');
+  if(!sb||!bd) return;
+  sb.classList.remove('mob-open');
+  bd.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function updateMobTopbar(){
+  const title = document.getElementById('mob-title');
+  const sync  = document.getElementById('mob-sync');
+  const stxt  = document.getElementById('mob-sync-text');
+  if(!title||!sync||!stxt) return;
+  title.textContent = curTab==='month' ? MONTHS[curMonth] : 'Visão Geral';
+  const mi = curMonth;
+  sync.className = 'mob-sync';
+  if(curTab !== 'month'){ stxt.textContent = '-'; return; }
+  if(monthLoading.has(mi)){ sync.className='mob-sync busy'; stxt.textContent='...'; return; }
+  if(unsavedMonths.has(mi)){ sync.className='mob-sync unsaved'; stxt.textContent='nao salvo'; }
+  else if(syncTs[mi]){ sync.className='mob-sync ok'; stxt.textContent=timeAgo(syncTs[mi]); }
+  else { stxt.textContent='-'; }
+}
+function updateMobActions(){
+  const bar=document.getElementById('mob-actions');
+  const btnSave=document.getElementById('mob-btn-save');
+  const btnCsv=document.getElementById('mob-btn-csv');
+  const btnRel=document.getElementById('mob-btn-reload');
+  if(!bar) return;
+  const isM=curTab==='month';
+  const editable=isM&&isEditable(curMonth);
+  bar.className=isM?'mob-actions visible':'mob-actions';
+  if(btnSave) btnSave.style.display=editable?'':'none';
+  if(btnCsv)  btnCsv.style.display=isM?'':'none';
+  if(btnRel)  btnRel.style.display=isM?'':'none';
+}
+/* Patch functions to update mobile UI */
+const _origSwitch=switchMonth;
+window.switchMonth=function(i){ closeMobSidebar(); _origSwitch(i); };
+const _origShow=showTab;
+window.showTab=function(tab){ _origShow(tab); updateMobTopbar(); updateMobActions(); };
+const _origMark=markUnsaved;
+window.markUnsaved=function(){ _origMark(); updateMobTopbar(); };
+const _origSyncB=updateSyncBadge;
+window.updateSyncBadge=function(){ _origSyncB(); updateMobTopbar(); updateMobActions(); };
+window.addEventListener('resize',function(){ updateMobActions(); updateMobTopbar(); });
+setTimeout(function(){ updateMobTopbar(); updateMobActions(); },200);
+
+
+/* ── MOBILE JS ── */
+function isMobile(){ return window.innerWidth <= 768; }
+function toggleMobSidebar(){
+  var sb=document.querySelector('.sidebar');
+  var bd=document.getElementById('mob-backdrop');
+  var open=sb.classList.contains('mob-open');
+  if(open){ sb.classList.remove('mob-open'); bd.classList.remove('open'); document.body.style.overflow=''; }
+  else { sb.classList.add('mob-open'); bd.classList.add('open'); document.body.style.overflow='hidden'; }
+}
+function closeMobSidebar(){
+  var sb=document.querySelector('.sidebar');
+  var bd=document.getElementById('mob-backdrop');
+  if(sb) sb.classList.remove('mob-open');
+  if(bd) bd.classList.remove('open');
+  document.body.style.overflow='';
+}
+function updateMobTopbar(){
+  var title=document.getElementById('mob-title');
+  var sync=document.getElementById('mob-sync');
+  var stxt=document.getElementById('mob-sync-text');
+  if(!title||!sync||!stxt) return;
+  title.textContent=curTab==='month'?MONTHS[curMonth]:'Visão Geral';
+  var mi=curMonth;
+  sync.className='mob-sync';
+  if(curTab!=='month'){ stxt.textContent='-'; return; }
+  if(monthLoading.has(mi)){ sync.className='mob-sync busy'; stxt.textContent='...'; return; }
+  if(unsavedMonths.has(mi)){ sync.className='mob-sync unsaved'; stxt.textContent='nao salvo'; }
+  else if(syncTs[mi]){ sync.className='mob-sync ok'; stxt.textContent=timeAgo(syncTs[mi]); }
+  else { stxt.textContent='-'; }
+}
+function updateMobActions(){
+  var bar=document.getElementById('mob-actions');
+  var btnSave=document.getElementById('mob-btn-save');
+  var btnCsv=document.getElementById('mob-btn-csv');
+  var btnRel=document.getElementById('mob-btn-reload');
+  if(!bar) return;
+  var isM=curTab==='month';
+  var editable=isM&&isEditable(curMonth);
+  bar.className=isM?'mob-actions visible':'mob-actions';
+  if(btnSave) btnSave.style.display=editable?'':'none';
+  if(btnCsv)  btnCsv.style.display=isM?'':'none';
+  if(btnRel)  btnRel.style.display=isM?'':'none';
+}
+/* patch switchMonth */
+var _oSM=switchMonth;
+window.switchMonth=function(i){ closeMobSidebar(); _oSM(i); };
+/* patch showTab */
+var _oST=showTab;
+window.showTab=function(t){ _oST(t); updateMobTopbar(); updateMobActions(); };
+/* patch markUnsaved */
+var _oMU=markUnsaved;
+window.markUnsaved=function(){ _oMU(); updateMobTopbar(); };
+/* patch updateSyncBadge */
+var _oUS=updateSyncBadge;
+window.updateSyncBadge=function(){ _oUS(); updateMobTopbar(); updateMobActions(); };
+window.addEventListener('resize',function(){ updateMobActions(); updateMobTopbar(); });
+setTimeout(function(){ updateMobTopbar(); updateMobActions(); },300);
+
+</script>
 <script>
 const PWD_HASH = '57ac534744939621dbf1e268a5a966bc83072af62a937202673bab2708a5cffd';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySnlOTazq9Wl0C10rH_oE5NGc2kfXviJK7ie9yi7A6QXJ_Y9Vt3I9Y5Y9WoKt5Y8My/exec';
@@ -365,14 +523,6 @@ const DEF_MET = [
 
 let curMonth=0, curTab='overview', data={}, cfg={scriptUrl:SCRIPT_URL}, charts={};
 let syncTs={}, unsavedMonths=new Set(), monthLoading=new Set();
-
-// Avisa antes de fechar se houver dados não salvos
-window.addEventListener('beforeunload', function(e) {
-  if(unsavedMonths.size > 0) {
-    e.preventDefault();
-    e.returnValue = ''; // necessário para Chrome/Edge mostrarem o diálogo
-  }
-});
 
 /* ── MELHORIA 8: controle de edição por data ── */
 function currentMonthIdx(){ return new Date().getMonth(); }
@@ -438,13 +588,6 @@ function initApp(){
     if(!data[i]) data[i]={horas:[],metricas:JSON.parse(JSON.stringify(DEF_MET))};
     if(!data[i].metricas||!data[i].metricas.length) data[i].metricas=JSON.parse(JSON.stringify(DEF_MET));
   }
-  // Expõe função de limpeza de cache no console para debug
-  window._clearCache = function(){
-    localStorage.removeItem('safe_2026');
-    localStorage.removeItem('safe_sync_ts');
-    localStorage.removeItem('safe_unsaved');
-    location.reload();
-  };
   renderNav();
   showTab('overview');
   loadAllMonths();
@@ -455,12 +598,6 @@ function saveSyncTs(){try{localStorage.setItem('safe_sync_ts',JSON.stringify(syn
 function saveUnsaved(){try{localStorage.setItem('safe_unsaved',JSON.stringify([...unsavedMonths]));}catch(e){}}
 function gm(){return data[curMonth];}
 function tot(r){return r.reduce((a,b)=>a+parseFloat(b.horas||0),0);}
-// Formata horas: remove trailing zeros, usa ponto decimal
-function fh(v){
-  const n = parseFloat(v)||0;
-  // Remove trailing zeros: 10.70 -> 10.7, 10.00 -> 10, 10.50 -> 10.5
-  return n % 1 === 0 ? n.toFixed(0) : parseFloat(n.toFixed(2)).toString();
-}
 function sjkH(r){return r.filter(x=>x.base==='SJK').reduce((a,b)=>a+parseFloat(b.horas||0),0);}
 function cpqH(r){return r.filter(x=>x.base==='CPQ').reduce((a,b)=>a+parseFloat(b.horas||0),0);}
 function mv(n){const m=gm().metricas.find(x=>x.metrica===n);return m?m.valor:0;}
@@ -496,108 +633,54 @@ async function loadAllMonths(){
   },500);
 }
 
-/* ── MELHORIA 2: POST para leitura ── */
-// lastRawResponse: guarda última resposta crua para diagnóstico
-let lastRawResponse = {};
-
+/* ── MELHORIA 2: POST para leitura — retorna 'ok'|'empty'|'err' ── */
 async function fetchMonthFromServer(mi, silent=false){
   const mn=MONTHS[mi], url=cfg.scriptUrl;
   if(!url) return 'err';
   monthLoading.add(mi);
   renderNavBtn(mi);
   try{
-    // text/plain evita preflight OPTIONS que o Apps Script não suporta
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({action: 'get', month: mn})
+    // POST com action:'get' conforme novo Apps Script
+    const r=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'get', month:mn})
     });
-
-    // Captura texto cru antes de parsear (diagnóstico)
-    const rawText = await r.text();
-    let j;
-    try { j = JSON.parse(rawText); }
-    catch(parseErr){
-      lastRawResponse[mi] = {raw: rawText.slice(0,500), parseErr: String(parseErr)};
-      monthLoading.delete(mi); renderNavBtn(mi);
-      if(!silent) toast('Erro de parse em '+mn, 'err');
-      return 'err';
-    }
-
-    lastRawResponse[mi] = j;
-
+    const j=await r.json();
     if(!j.ok){
-      // Aba não existe na planilha — sem dados ainda
-      monthLoading.delete(mi); renderNavBtn(mi);
+      // Aba não existe na planilha — não é erro, só ainda sem dados
+      monthLoading.delete(mi);
+      renderNavBtn(mi);
       return 'empty';
     }
-
-    // Sobrescreve sempre que o servidor retornar ok:true com arrays (mesmo que vazios)
-    // Horas: aceita se array com pelo menos 1 item com tipo preenchido
-    const horasValidas = Array.isArray(j.horas) && j.horas.length > 0;
-    // Métricas: aceita SEMPRE que vier array com itens — não filtra por valor
-    const metValidas   = Array.isArray(j.metricas) && j.metricas.length > 0;
-
-    if(horasValidas){
-      data[mi].horas = j.horas.map(x=>({
-        base:  String(x.base  || 'SJK'),
-        tipo:  String(x.tipo  || ''),
-        horas: parseFloat(x.horas) || 0
-      }));
+    // Só sobrescreve se vier dados reais (fix Abril vazio)
+    if(j.horas && j.horas.length>0){
+      data[mi].horas=j.horas.map(x=>({base:String(x.base),tipo:String(x.tipo),horas:parseFloat(x.horas)||0}));
     }
-    if(metValidas){
-      data[mi].metricas = j.metricas.map(x=>({
-        metrica: String(x.metrica || ''),
-        valor:   parseFloat(x.valor) || 0
-      }));
+    if(j.metricas && j.metricas.length>0){
+      data[mi].metricas=j.metricas.map(x=>({metrica:String(x.metrica),valor:parseFloat(x.valor)||0}));
     }
-
     syncTs[mi]=Date.now();
     unsavedMonths.delete(mi);
-    saveLocal(); saveSyncTs(); saveUnsaved();
-    monthLoading.delete(mi); renderNavBtn(mi);
-    return (horasValidas || metValidas) ? 'ok' : 'empty';
-
+    saveLocal();saveSyncTs();saveUnsaved();
+    monthLoading.delete(mi);
+    renderNavBtn(mi);
+    return j.horas&&j.horas.length>0?'ok':'empty';
   }catch(e){
-    lastRawResponse[mi] = {fetchErr: String(e)};
-    monthLoading.delete(mi); renderNavBtn(mi);
+    monthLoading.delete(mi);
+    renderNavBtn(mi);
     if(!silent) toast('Erro ao carregar '+mn+': '+e.message,'err');
     return 'err';
   }
 }
 
 async function loadFromSheets(mi, silent=false){
-  const status = await fetchMonthFromServer(mi, silent);
-  if(mi===curMonth && curTab==='month'){ renderAll(); updateSyncBadge(); }
+  const status=await fetchMonthFromServer(mi,silent);
+  if(mi===curMonth&&curTab==='month'){renderAll();updateSyncBadge();}
   renderNav();
-  if(!silent){
-    if(status==='ok') toast(MONTHS[mi]+' carregado.','ok');
-    else if(status==='empty') toast(MONTHS[mi]+': sem dados na planilha.','info');
-    else toast(MONTHS[mi]+': falha na requisição.','err');
-  }
+  if(!silent&&status==='ok') toast(MONTHS[mi]+' carregado.','ok');
+  else if(!silent&&status==='empty') toast(MONTHS[mi]+': aba sem dados na planilha.','info');
 }
-
-/* ── DEBUG: mostra resposta raw do servidor ── */
-function showDebug(){
-  const mi = curMonth;
-  const raw = lastRawResponse[mi];
-  if(!raw){ toast('Nenhuma resposta capturada para '+MONTHS[mi]+' ainda. Clique em ⟳ Recarregar.','info'); return; }
-  const txt = JSON.stringify(raw, null, 2);
-  const ov = document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center';
-  const box = document.createElement('div');
-  box.style.cssText='background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px;width:640px;max-width:96vw;max-height:80vh;overflow:auto;box-shadow:var(--shadow)';
-  box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-    +'<span style="font-size:13px;font-weight:600;color:var(--text)">Resposta do servidor — '+MONTHS[mi]+'</span>'
-    +'<button onclick="this.closest(\'div\').parentNode.parentNode.remove()" style="background:transparent;border:none;cursor:pointer;font-size:20px;color:var(--text3);line-height:1">×</button>'
-    +'</div>'
-    +'<pre style="font-size:11px;font-family:\'Geist Mono\',monospace;color:var(--text2);white-space:pre-wrap;line-height:1.7;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px">'
-    +txt.replace(/</g,'&lt;')+'</pre>';
-  ov.appendChild(box);
-  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
-  document.body.appendChild(ov);
-}
-
 
 /* ── MELHORIA 4: spinner individual por mês ── */
 function renderNavBtn(mi){
@@ -681,8 +764,6 @@ function showTab(tab){
   curTab=tab;
   const isM=tab==='month';
   document.getElementById('btn-csv').style.display=isM?'':'none';
-  document.getElementById('btn-reload').style.display=isM?'':'none';
-  document.getElementById('btn-debug').style.display=isM?'':'none';
   // Botão salvar: só mostra se editável E na aba mês
   const editable=isM&&isEditable(curMonth);
   document.getElementById('btn-save').style.display=editable?'':'none';
@@ -721,7 +802,7 @@ function confirmSave(){
   document.getElementById('confirm-summary').innerHTML=
     `Mês: <b>${MONTHS[curMonth]}</b><br>`+
     `Linhas de horas: <b>${m.horas.length}</b><br>`+
-    `Total de horas: <b>${fh(tot(m.horas))}h</b><br>`+
+    `Total de horas: <b>${tot(m.horas).toFixed(2).replace('.',',')}h</b><br>`+
     `Métricas: <b>${m.metricas.length} itens</b>`;
   document.getElementById('confirm-overlay').classList.add('open');
 }
@@ -863,9 +944,9 @@ function renderHorasTable(){
   rows.forEach((row,i)=>{
     const tr=document.createElement('tr');
     if(ro){
-      tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()}">${row.base}</span></td><td class="ro">${row.tipo}</td><td class="r ro">${fh(row.horas)}</td><td></td>`;
+      tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()}">${row.base}</span></td><td class="ro">${row.tipo}</td><td class="r ro">${parseFloat(row.horas).toFixed(2).replace('.',',')}</td><td></td>`;
     }else{
-      tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()} clickable" title="Clique para alternar">${row.base}</span></td><td class="editable editable-left">${row.tipo}</td><td class="editable r">${fh(row.horas)}</td><td><button class="del-btn" onclick="delH(${i})">×</button></td>`;
+      tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()} clickable" title="Clique para alternar">${row.base}</span></td><td class="editable editable-left">${row.tipo}</td><td class="editable r">${parseFloat(row.horas).toFixed(2).replace('.',',')}</td><td><button class="del-btn" onclick="delH(${i})">×</button></td>`;
       tr.querySelector('.badge').addEventListener('click',()=>{row.base=row.base==='SJK'?'CPQ':'SJK';markUnsaved();saveLocal();renderAll();});
       editCell(tr.querySelectorAll('td')[1],()=>row.tipo,v=>{row.tipo=v;});
       editCellNum(tr.querySelectorAll('td')[2],()=>row.horas,v=>{row.horas=v;});
@@ -873,7 +954,7 @@ function renderHorasTable(){
     tb.appendChild(tr);
   });
   const ttr=document.createElement('tr');ttr.className='total-row';
-  ttr.innerHTML=`<td colspan="2" style="font-family:'Geist',sans-serif">Total</td><td class="r">${fh(tot(rows))}</td><td></td>`;
+  ttr.innerHTML=`<td colspan="2" style="font-family:'Geist',sans-serif">Total</td><td class="r">${tot(rows).toFixed(2).replace('.',',')}</td><td></td>`;
   tb.appendChild(ttr);
 }
 
@@ -913,7 +994,7 @@ function renderChart(){
   const tealC=isDark?'rgba(45,212,191,.65)':'rgba(13,148,136,.55)';
   const tealH=isDark?'rgba(94,234,212,.85)':'rgba(13,148,136,.8)';
   const tt={backgroundColor:isDark?'rgba(20,20,31,.97)':'rgba(255,255,255,.97)',borderColor:isDark?'rgba(255,255,255,.1)':'rgba(0,0,0,.12)',borderWidth:1,titleColor:isDark?'#9191a8':'#4b5563',bodyColor:isDark?'#f1f1f5':'#111827',padding:10};
-  charts['hchart']=new Chart(canvas,{type:'bar',data:{labels:rows.map(r=>r.tipo),datasets:[{data:rows.map(r=>parseFloat(r.horas)||0),backgroundColor:rows.map(r=>r.base==='SJK'?accentC:tealC),hoverBackgroundColor:rows.map(r=>r.base==='SJK'?accentH:tealH),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>' '+fh(ctx.parsed.x)+'h'}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10,family:"'Geist Mono',monospace"},callback:v=>v+'h'}},y:{grid:{display:false},ticks:{color:tc,font:{size:10,family:"'Geist',sans-serif"}}}}}});
+  charts['hchart']=new Chart(canvas,{type:'bar',data:{labels:rows.map(r=>r.tipo),datasets:[{data:rows.map(r=>parseFloat(r.horas)||0),backgroundColor:rows.map(r=>r.base==='SJK'?accentC:tealC),hoverBackgroundColor:rows.map(r=>r.base==='SJK'?accentH:tealH),borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:ctx=>' '+ctx.parsed.x.toFixed(2).replace('.',',')+'h'}}},scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10,family:"'Geist Mono',monospace"},callback:v=>v+'h'}},y:{grid:{display:false},ticks:{color:tc,font:{size:10,family:"'Geist',sans-serif"}}}}}});
 }
 
 function renderMet(){
@@ -935,21 +1016,13 @@ function addM(){if(!isEditable(curMonth)){toast('Este mês é somente leitura.',
 /* ── CONFIG ── */
 function openConfig(){document.getElementById('cfg-script-url').value=cfg.scriptUrl||SCRIPT_URL;document.getElementById('config-overlay').classList.add('open');}
 function closeConfig(){document.getElementById('config-overlay').classList.remove('open');}
-function clearCacheReload(){
-  if(!confirm('Apagar todos os dados locais e recarregar do servidor?')) return;
-  localStorage.removeItem('safe_2026');
-  localStorage.removeItem('safe_sync_ts');
-  localStorage.removeItem('safe_unsaved');
-  closeConfig();
-  location.reload();
-}
 function saveConfig(){cfg.scriptUrl=document.getElementById('cfg-script-url').value.trim()||SCRIPT_URL;saveCfg();closeConfig();toast('Configuração salva.','ok');}
 async function testConnection(){
   const url=document.getElementById('cfg-script-url').value.trim()||cfg.scriptUrl;
   if(!url){toast('Cole a URL do Apps Script.','err');return;}
   toast('Testando…','info');
   try{
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'get',month:'Janeiro'})});
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get',month:'Janeiro'})});
     const j=await r.json();
     // ok:true = aba existe com dados; ok:false = aba não existe mas endpoint respondeu
     toast(j.ok?'Conexão OK! Planilha acessível.':'Conexão OK (aba Janeiro sem dados ainda).','ok');
