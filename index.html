@@ -477,7 +477,9 @@ td.ro:hover{background:transparent!important}
 
 <div id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+
 function closeMobSidebar(){
   const sb = document.querySelector('.sidebar');
   const bd = document.getElementById('mob-backdrop');
@@ -594,6 +596,7 @@ window.updateSyncBadge=function(){ _us0(); mobUpdateBar(); mobUpdateFoot(); };
 
 window.addEventListener('resize',function(){ mobUpdateBar(); mobUpdateFoot(); });
 setTimeout(function(){ mobUpdateBar(); mobUpdateFoot(); },400);
+
 
 </script>
 <script>
