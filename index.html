@@ -403,7 +403,7 @@ td.ro:hover{background:transparent!important}
         </div>
       </div>
       <div class="sb-section">Navegação</div>
-      <button class="month-btn" id="tab-overview" onclick="showTab('overview')">
+      <button class="month-btn" id="tab-overview" onclick="if(typeof mobClose==='function')mobClose();showTab('overview')">
         <span>Visão Geral</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       </button>
@@ -681,6 +681,9 @@ function initApp(){
   for(let i=0;i<12;i++){
     if(!data[i]) data[i]={horas:[],metricas:JSON.parse(JSON.stringify(DEF_MET))};
     if(!data[i].metricas||!data[i].metricas.length) data[i].metricas=JSON.parse(JSON.stringify(DEF_MET));
+    // Descarta métricas corrompidas (metrica vazia = cache antigo defeituoso)
+    var allEmpty = data[i].metricas.every(function(m){ return !m.metrica || String(m.metrica).trim()===''; });
+    if(allEmpty) data[i].metricas=JSON.parse(JSON.stringify(DEF_MET));
   }
   renderNav();
   showTab('overview');
@@ -701,6 +704,12 @@ function totAll(i){return data[i]?tot(data[i].horas):0;}
 /* ── MELHORIA 1+2: carga automática 12 meses em paralelo via POST ── */
 async function loadAllMonths(){
   const url=cfg.scriptUrl; if(!url) return;
+  // Meses com localStorage corrompido (horas vazias mas syncTs existe) são recarregados do zero
+  for(let i=0;i<12;i++){
+    if(syncTs[i] && data[i] && data[i].horas && data[i].horas.length===0){
+      delete syncTs[i]; // força recarga
+    }
+  }
   const ls=document.getElementById('loading-screen');
   const lsBar=document.getElementById('ls-bar');
   const lsSub=document.getElementById('ls-sub');
@@ -846,7 +855,7 @@ function renderNav(){
     if(isLoading) rightHtml='<span class="mb-spinner on"></span>';
     else if(isUnsaved) rightHtml='<span style="font-size:9px;color:var(--amber)">●</span>';
     else rightHtml=`<span class="mb-dot ${hasData?'on':''}"></span>`;
-    return `<button class="month-btn ${isActive?'active':''}" data-mi="${i}" onclick="switchMonth(${i})">
+    return `<button class="month-btn ${isActive?'active':''}" data-mi="${i}" onclick="if(typeof mobClose==='function')mobClose();switchMonth(${i})">
       <span>${m}</span><span class="mb-right">${rightHtml}</span>
     </button>`;
   }).join('');
