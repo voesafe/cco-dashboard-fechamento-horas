@@ -723,7 +723,7 @@ function renderMonth(){
     '<div class="kpi-strip" id="kpi-strip"></div>'+
     '<div class="grid-2">'+
       '<div class="panel" id="horas-panel">'+
-        '<div class="ph"><span class="ph-title">Horas voadas</span><span id="ph-add-btn">'+(ro?'':'<button class="ph-action" onclick="addH()">+ linha</button>')+'</span></div>'+
+        '<div class="ph"><span class="ph-title">Horas voadas</span></div>'+
         '<div class="htabs" id="htabs-bar"></div>'+
         '<table><thead><tr><th>Base</th><th>Tipo</th><th class="r">Horas</th><th id="th-del"></th></tr></thead><tbody id="htbody"></tbody></table>'+
       '</div>'+
@@ -733,7 +733,7 @@ function renderMonth(){
       '</div>'+
     '</div>'+
     '<div class="panel" style="margin-bottom:32px">'+
-      '<div class="ph"><span class="ph-title">Métricas de alunos</span>'+(ro?'':'<button class="ph-action" onclick="addM()">+ métrica</button>')+'</div>'+
+      '<div class="ph"><span class="ph-title">Métricas de alunos</span>'+(ro?'':'')+'</div>'+
       '<div class="met-grid" id="met-grid"></div>'+
     '</div>';
   renderKPIs();renderHTabs();renderHTable();renderChart();renderMet();
@@ -757,9 +757,6 @@ function renderHTabs(){
 function switchHTab(id){
   curHTab=id;
   var ro=!isEditable(curMonth);
-  var addBtn=document.getElementById('ph-add-btn');
-  if(addBtn)addBtn.innerHTML=(id==='geral'&&!ro)?'<button class="ph-action" onclick="addH()">+ linha</button>':'';
-  var thDel=document.getElementById('th-del');
   renderHTabs();
   renderHTableFiltered();
 }
@@ -784,7 +781,7 @@ function renderHTableFiltered(){
       tr.innerHTML='<td><span class="badge badge-'+row.base.toLowerCase()+'">'+row.base+'</span></td><td class="ro">'+row.tipo+'</td><td class="r ro">'+fh(row.horas)+'</td><td></td>';
     }else{
       var realIdx=gm().horas.indexOf(row);
-      tr.innerHTML='<td><span class="badge badge-'+row.base.toLowerCase()+' clickable">'+row.base+'</span></td><td class="editable editable-left">'+row.tipo+'</td><td class="editable r">'+fh(row.horas)+'</td><td><button class="del-btn" onclick="delH('+realIdx+')">×</button></td>';
+      tr.innerHTML='<td><span class="badge badge-'+row.base.toLowerCase()+' clickable">'+row.base+'</span></td><td class="editable editable-left">'+row.tipo+'</td><td class="editable r">'+fh(row.horas)+'</td><td></td>';
       tr.querySelector('.badge').addEventListener('click',function(){row.base=row.base==='SJK'?'CPQ':'SJK';markUnsaved();saveLocal();renderAll();});
       editCell(tr.querySelectorAll('td')[1],function(){return row.tipo;},function(v){row.tipo=v;});
       editNum(tr.querySelectorAll('td')[2],function(){return row.horas;},function(v){row.horas=v;});
@@ -813,7 +810,7 @@ function renderHTable_full(){
     if(ro){
       tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()}">${row.base}</span></td><td class="ro">${row.tipo}</td><td class="r ro">${fh(row.horas)}</td><td></td>`;
     }else{
-      tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()} clickable">${row.base}</span></td><td class="editable editable-left">${row.tipo}</td><td class="editable r">${fh(row.horas)}</td><td><button class="del-btn" onclick="delH(${i})">×</button></td>`;
+      tr.innerHTML=`<td><span class="badge badge-${row.base.toLowerCase()} clickable">${row.base}</span></td><td class="editable editable-left">${row.tipo}</td><td class="editable r">${fh(row.horas)}</td><td></td>`;
       tr.querySelector('.badge').addEventListener('click',()=>{row.base=row.base==='SJK'?'CPQ':'SJK';markUnsaved();saveLocal();renderAll();});
       editCell(tr.querySelectorAll('td')[1],()=>row.tipo,v=>{row.tipo=v;});
       editNum(tr.querySelectorAll('td')[2],()=>row.horas,v=>{row.horas=v;});
