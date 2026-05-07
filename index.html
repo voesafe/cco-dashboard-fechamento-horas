@@ -247,6 +247,14 @@ td.ro:hover{background:transparent!important}
   #mob-foot{display:none!important}
   .sidebar{display:flex!important;transform:none!important}
 }
+
+/* ── HORAS TABS ── */
+.htabs{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.htab{padding:10px 14px;font-size:11px;font-weight:500;font-family:'Geist',sans-serif;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;background:transparent;border-top:none;border-left:none;border-right:none;margin-bottom:-1px}
+.htab:hover{color:var(--text2)}
+.htab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+[data-theme="dark"] .htab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+
 </style>
 </head>
 <body>
@@ -389,7 +397,7 @@ td.ro:hover{background:transparent!important}
 const PWD_HASH='57ac534744939621dbf1e268a5a966bc83072af62a937202673bab2708a5cffd';
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbySnlOTazq9Wl0C10rH_oE5NGc2kfXviJK7ie9yi7A6QXJ_Y9Vt3I9Y5Y9WoKt5Y8My/exec';
 const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const DEF_HORAS=[{base:'SJK',tipo:'PR-CRS',horas:0},{base:'SJK',tipo:'PS-LOM',horas:0},{base:'SJK',tipo:'PS-SFE',horas:0},{base:'SJK',tipo:'PS-SFI',horas:0},{base:'SJK',tipo:'PS-SFH',horas:0},{base:'SJK',tipo:'AATD SJK',horas:0},{base:'CPQ',tipo:'PS-SFJ',horas:0},{base:'CPQ',tipo:'PS-SFL',horas:0},{base:'CPQ',tipo:'AATD CPQ',horas:0}];
+const DEF_HORAS=[{base:'SJK',tipo:'PS-LOM',horas:0},{base:'SJK',tipo:'PS-SFE',horas:0},{base:'SJK',tipo:'PS-SFI',horas:0},{base:'SJK',tipo:'PS-SFH',horas:0},{base:'SJK',tipo:'AATD SJK',horas:0},{base:'CPQ',tipo:'PS-SFJ',horas:0},{base:'CPQ',tipo:'PS-SFL',horas:0},{base:'CPQ',tipo:'AATD CPQ',horas:0}];
 const DEF_MET=[{metrica:'Número de Cheques',valor:0},{metrica:'Número de Voos Solos',valor:0},{metrica:'Alunos Novos',valor:0},{metrica:'Alunos Ativos CPQ - PP',valor:0},{metrica:'Alunos Ativos CPQ - PC',valor:0},{metrica:'Alunos Ativos CPQ - INVA',valor:0},{metrica:'Alunos Ativos SJK - PP',valor:0},{metrica:'Alunos Ativos SJK - PC',valor:0},{metrica:'Alunos Ativos SJK - INVA',valor:0},{metrica:'Alunos Ativos SJK - Contínuo',valor:0},{metrica:'Alunos Ativos CPQ - Contínuo',valor:0}];
 
 let curMonth=0,curTab='overview',data={},cfg={scriptUrl:SCRIPT_URL},charts={};
@@ -560,6 +568,7 @@ function updateBadge(){
 
 /* ── TABS ── */
 function showTab(tab){
+  if(tab==='month')curHTab='geral';
   curTab=tab;const isM=tab==='month';
   document.getElementById('btn-csv').style.display=isM?'':'none';
   document.getElementById('btn-reload').style.display=isM?'':'none';
@@ -697,27 +706,96 @@ function renderOverview(){
 }
 
 /* ── RENDER MONTH ── */
+// Definição das abas de aeronaves
+var HTABS=[
+  {id:'geral', label:'Geral', filter:null},
+  {id:'mc01',  label:'MC-01', filter:['PS-LOM','PS-SFE','PS-SFI','PS-SFH']},
+  {id:'colt',  label:'COLT',  filter:['PS-SFJ','PS-SFL']},
+  {id:'sim',   label:'Simulador', filter:['AATD SJK','AATD CPQ']}
+];
+var curHTab='geral';
+
 function renderMonth(){
-  const area=document.getElementById('content-area');
-  const ro=!isEditable(curMonth);
-  const leg=(c,t)=>`<span style="font-size:10px;color:var(--text3);font-family:'Geist Mono',monospace;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:2px;background:${c};display:inline-block"></span>${t}</span>`;
-  area.innerHTML=`
-    <div class="kpi-strip" id="kpi-strip"></div>
-    <div class="grid-2">
-      <div class="panel">
-        <div class="ph"><span class="ph-title">Horas voadas</span>${ro?'':`<button class="ph-action" onclick="addH()">+ linha</button>`}</div>
-        <table><thead><tr><th>Base</th><th>Tipo</th><th class="r">Horas</th><th></th></tr></thead><tbody id="htbody"></tbody></table>
-      </div>
-      <div class="panel">
-        <div class="ph"><span class="ph-title">Distribuição</span><div style="display:flex;gap:10px">${leg('var(--accent)','SJK')}${leg('var(--teal)','CPQ')}</div></div>
-        <div style="padding:18px 20px"><div style="position:relative;height:260px"><canvas id="hchart"></canvas></div></div>
-      </div>
-    </div>
-    <div class="panel" style="margin-bottom:32px">
-      <div class="ph"><span class="ph-title">Métricas de alunos</span>${ro?'':`<button class="ph-action" onclick="addM()">+ métrica</button>`}</div>
-      <div class="met-grid" id="met-grid"></div>
-    </div>`;
-  renderKPIs();renderHTable();renderChart();renderMet();
+  var area=document.getElementById('content-area');
+  var ro=!isEditable(curMonth);
+  var leg=function(c,t){return '<span style="font-size:10px;color:var(--text3);font-family:Geist Mono,monospace;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:2px;background:'+c+';display:inline-block"></span>'+t+'</span>';};
+  area.innerHTML=
+    '<div class="kpi-strip" id="kpi-strip"></div>'+
+    '<div class="grid-2">'+
+      '<div class="panel" id="horas-panel">'+
+        '<div class="ph"><span class="ph-title">Horas voadas</span><span id="ph-add-btn">'+(ro?'':'<button class="ph-action" onclick="addH()">+ linha</button>')+'</span></div>'+
+        '<div class="htabs" id="htabs-bar"></div>'+
+        '<table><thead><tr><th>Base</th><th>Tipo</th><th class="r">Horas</th><th id="th-del"></th></tr></thead><tbody id="htbody"></tbody></table>'+
+      '</div>'+
+      '<div class="panel">'+
+        '<div class="ph"><span class="ph-title">Distribuição</span><div style="display:flex;gap:10px">'+leg('var(--accent)','SJK')+leg('var(--teal)','CPQ')+'</div></div>'+
+        '<div style="padding:18px 20px"><div style="position:relative;height:260px"><canvas id="hchart"></canvas></div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="panel" style="margin-bottom:32px">'+
+      '<div class="ph"><span class="ph-title">Métricas de alunos</span>'+(ro?'':'<button class="ph-action" onclick="addM()">+ métrica</button>')+'</div>'+
+      '<div class="met-grid" id="met-grid"></div>'+
+    '</div>';
+  renderKPIs();renderHTabs();renderHTable();renderChart();renderMet();
+}
+
+function renderHTabs(){
+  var bar=document.getElementById('htabs-bar');
+  if(!bar)return;
+  bar.innerHTML='';
+  HTABS.forEach(function(t){
+    var btn=document.createElement('button');
+    btn.className='htab'+(curHTab===t.id?' active':'');
+    btn.textContent=t.label;
+    btn.setAttribute('data-tab',t.id);
+    btn.addEventListener('click',function(){switchHTab(this.getAttribute('data-tab'));});
+    bar.appendChild(btn);
+  });
+}
+
+
+function switchHTab(id){
+  curHTab=id;
+  var ro=!isEditable(curMonth);
+  var addBtn=document.getElementById('ph-add-btn');
+  if(addBtn)addBtn.innerHTML=(id==='geral'&&!ro)?'<button class="ph-action" onclick="addH()">+ linha</button>':'';
+  var thDel=document.getElementById('th-del');
+  renderHTabs();
+  renderHTableFiltered();
+}
+
+function getFilteredRows(){
+  var tab=HTABS.find(function(t){return t.id===curHTab;});
+  if(!tab||!tab.filter)return{rows:gm().horas,filtered:false};
+  var rows=gm().horas.filter(function(r){return tab.filter.indexOf(r.tipo)>=0;});
+  return{rows:rows,filtered:true};
+}
+
+function renderHTableFiltered(){
+  var res=getFilteredRows();
+  var rows=res.rows;
+  var tb=document.getElementById('htbody');
+  if(!tb)return;
+  tb.innerHTML='';
+  var ro=!isEditable(curMonth)||res.filtered;
+  rows.forEach(function(row,i){
+    var tr=document.createElement('tr');
+    if(ro){
+      tr.innerHTML='<td><span class="badge badge-'+row.base.toLowerCase()+'">'+row.base+'</span></td><td class="ro">'+row.tipo+'</td><td class="r ro">'+fh(row.horas)+'</td><td></td>';
+    }else{
+      var realIdx=gm().horas.indexOf(row);
+      tr.innerHTML='<td><span class="badge badge-'+row.base.toLowerCase()+' clickable">'+row.base+'</span></td><td class="editable editable-left">'+row.tipo+'</td><td class="editable r">'+fh(row.horas)+'</td><td><button class="del-btn" onclick="delH('+realIdx+')">×</button></td>';
+      tr.querySelector('.badge').addEventListener('click',function(){row.base=row.base==='SJK'?'CPQ':'SJK';markUnsaved();saveLocal();renderAll();});
+      editCell(tr.querySelectorAll('td')[1],function(){return row.tipo;},function(v){row.tipo=v;});
+      editNum(tr.querySelectorAll('td')[2],function(){return row.horas;},function(v){row.horas=v;});
+    }
+    tb.appendChild(tr);
+  });
+  var subtot=rows.reduce(function(a,b){return a+parseFloat(b.horas||0);},0);
+  var ttr=document.createElement('tr');ttr.className='total-row';
+  var label=res.filtered?(HTABS.find(function(t){return t.id===curHTab;}).label):'Total';
+  ttr.innerHTML='<td colspan="2" style="font-family:Geist,sans-serif">'+label+'</td><td class="r">'+fh(subtot)+'</td><td></td>';
+  tb.appendChild(ttr);
 }
 function renderKPIs(){
   const h=gm().horas,el=document.getElementById('kpi-strip');if(!el)return;el.innerHTML='';
@@ -725,6 +803,9 @@ function renderKPIs(){
   .forEach(k=>{const d=document.createElement('div');d.className='kpi '+k.a;d.innerHTML=`<div class="kpi-label">${k.l}</div><div class="kpi-val">${k.v}<sup>${k.s}</sup></div>`;el.appendChild(d);});
 }
 function renderHTable(){
+  renderHTableFiltered();
+}
+function renderHTable_full(){
   const rows=gm().horas,tb=document.getElementById('htbody');if(!tb)return;tb.innerHTML='';
   const ro=!isEditable(curMonth);
   rows.forEach((row,i)=>{
