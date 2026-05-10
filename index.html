@@ -255,6 +255,22 @@ td.ro:hover{background:transparent!important}
 .htab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
 [data-theme="dark"] .htab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
 
+
+/* ── UPLOAD MODAL ── */
+#upload-overlay{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+#upload-overlay.open{display:flex}
+.upload-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:28px 32px;width:460px;max-width:94vw;box-shadow:var(--shadow);animation:card-in .25s cubic-bezier(.34,1.56,.64,1) both}
+.upload-modal h3{font-size:16px;font-weight:500;margin-bottom:8px}
+.upload-modal p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.upload-drop{border:2px dashed var(--border2);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface)}
+.upload-drop:hover,.upload-drop.dragover{border-color:var(--accent);background:rgba(37,99,235,.05)}
+.upload-drop svg{margin-bottom:10px;color:var(--text3)}
+.upload-drop p{font-size:13px;color:var(--text3);margin-bottom:4px}
+.upload-drop span{font-size:11px;color:var(--text3);font-family:'Geist Mono',monospace}
+#upload-file-input{display:none}
+.upload-result{margin-top:16px;font-size:12px;font-family:'Geist Mono',monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:none;line-height:1.8;color:var(--text2)}
+.upload-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
 </style>
 </head>
 <body>
@@ -360,6 +376,26 @@ td.ro:hover{background:transparent!important}
   </div>
 </div>
 
+
+<!-- UPLOAD MODAL -->
+<div id="upload-overlay">
+  <div class="upload-modal">
+    <h3>Upload do fechamento mensal</h3>
+    <p>Selecione o arquivo XLS exportado do CAVOK para o mês <strong id="upload-month-name"></strong>. Os dados de horas serão substituídos.</p>
+    <div class="upload-drop" id="upload-drop" onclick="document.getElementById('upload-file-input').click()">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p>Clique ou arraste o arquivo aqui</p>
+      <span>.xls exportado do CAVOK</span>
+    </div>
+    <input type="file" id="upload-file-input" accept=".xls,.xlsx">
+    <div class="upload-result" id="upload-result"></div>
+    <div class="upload-actions">
+      <button class="btn btn-ghost" onclick="closeUpload()">Cancelar</button>
+      <button class="btn btn-accent" id="upload-confirm-btn" onclick="confirmUpload()" style="display:none">Aplicar dados</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirm-overlay">
   <div class="confirm-modal">
     <h3>Confirmar salvamento</h3>
@@ -393,6 +429,157 @@ td.ro:hover{background:transparent!important}
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+
+/* ══════════════════════════════════════════
+   UPLOAD EXCEL (CAVOK)
+══════════════════════════════════════════ */
+var _uploadParsed = null;
+
+function openUpload(){
+  document.getElementById('upload-month-name').textContent = MONTHS[curMonth];
+  document.getElementById('upload-result').style.display = 'none';
+  document.getElementById('upload-confirm-btn').style.display = 'none';
+  document.getElementById('upload-file-input').value = '';
+  _uploadParsed = null;
+  document.getElementById('upload-overlay').classList.add('open');
+}
+function closeUpload(){
+  document.getElementById('upload-overlay').classList.remove('open');
+  _uploadParsed = null;
+}
+document.getElementById('upload-overlay').addEventListener('click', function(e){
+  if(e.target===document.getElementById('upload-overlay')) closeUpload();
+});
+
+// Drag and drop
+var dropZone = document.getElementById('upload-drop');
+dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e){
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  var file = e.dataTransfer.files[0];
+  if(file) processUploadFile(file);
+});
+document.getElementById('upload-file-input').addEventListener('change', function(e){
+  if(e.target.files[0]) processUploadFile(e.target.files[0]);
+});
+
+function processUploadFile(file){
+  var resultEl = document.getElementById('upload-result');
+  var confirmBtn = document.getElementById('upload-confirm-btn');
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Lendo arquivo…';
+  confirmBtn.style.display = 'none';
+  _uploadParsed = null;
+
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      // Use SheetJS to parse XLS
+      var data = new Uint8Array(e.target.result);
+      var wb = XLSX.read(data, {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+      if(!rows.length){ resultEl.textContent = 'Arquivo vazio ou inválido.'; return; }
+
+      // Find column names (case-insensitive)
+      var sample = rows[0];
+      var keys = Object.keys(sample);
+      function findCol(candidates){
+        for(var i=0;i<candidates.length;i++){
+          for(var j=0;j<keys.length;j++){
+            if(keys[j].toLowerCase().replace(/\s+/g,'_') === candidates[i].toLowerCase()) return keys[j];
+          }
+        }
+        return null;
+      }
+      var colAero  = findCol(['aeronave']);
+      var colHoras = findCol(['tempo_total_decimal_export']);
+      var colAluno = findCol(['aluno']);
+
+      if(!colAero||!colHoras){
+        resultEl.textContent = 'Colunas não encontradas. Verifique se é o export padrão do CAVOK.';
+        return;
+      }
+
+      var AERO_BASE_MAP = {
+        'PS-LOM':'SJK','PS-SFE':'SJK','PS-SFH':'SJK','PS-SFI':'SJK',
+        'PS-SFJ':'CPQ','PS-SFL':'CPQ','PS-SFP':'SJK',
+        'SM-SJK':'SJK','SM-CPQ':'CPQ'
+      };
+      var AERO_VALIDAS_UP = Object.keys(AERO_BASE_MAP);
+      var MC01_UP = ['PS-LOM','PS-SFE','PS-SFH','PS-SFI'];
+      var EXCLUIR_COTISTA = ['VOO DE INCENTIVO','VOO ADMINISTRATIVO - SAFE'];
+
+      // Aggregate horas por aeronave (geral)
+      var horasPorAero = {};
+      var cotistaPorAero = {};
+      AERO_VALIDAS_UP.forEach(function(a){ horasPorAero[a]=0; cotistaPorAero[a]=0; });
+
+      rows.forEach(function(row){
+        var aero = String(row[colAero]||'').trim().toUpperCase();
+        // Normalize
+        aero = aero.replace('SM-CPQ (CAMPINAS)','SM-CPQ').replace('SM-SJK (SAO JOSE DOS CAMPOS)','SM-SJK')
+                   .replace('SM-SJK (SÃO JOSÉ DOS CAMPOS)','SM-SJK');
+        if(AERO_VALIDAS_UP.indexOf(aero)<0) return;
+        var h = parseFloat(String(row[colHoras]||'0').replace(',','.')) || 0;
+        horasPorAero[aero] += h;
+        // Cotista: só MC01, exclui incentivo/admin/vazio
+        if(MC01_UP.indexOf(aero)>=0 && colAluno){
+          var aluno = String(row[colAluno]||'').trim().toUpperCase();
+          var excluir = aluno==='' || EXCLUIR_COTISTA.map(function(x){return x.toUpperCase();}).indexOf(aluno)>=0;
+          if(!excluir) cotistaPorAero[aero] += h;
+        }
+      });
+
+      // Build horas array (same format as existing data)
+      var horasArr = AERO_VALIDAS_UP.map(function(aero){
+        return {
+          base: AERO_BASE_MAP[aero],
+          tipo: aero,
+          horas: Math.round(horasPorAero[aero]*10)/10,
+          cotista_horas: MC01_UP.indexOf(aero)>=0 ? Math.round(cotistaPorAero[aero]*10)/10 : null
+        };
+      });
+
+      _uploadParsed = horasArr;
+
+      // Show preview
+      var total = horasArr.reduce(function(a,b){return a+b.horas;},0);
+      var totalCotista = horasArr.filter(function(r){return r.cotista_horas!=null;})
+                                  .reduce(function(a,b){return a+(b.cotista_horas||0);},0);
+      var lines = horasArr.map(function(r){
+        var s = r.tipo + ': ' + fh(r.horas) + 'h';
+        if(r.cotista_horas!=null) s += '  (cotista: ' + fh(r.cotista_horas) + 'h)';
+        return s;
+      });
+      lines.push('');
+      lines.push('TOTAL GERAL: ' + fh(total) + 'h');
+      lines.push('TOTAL COTISTA (MC-01): ' + fh(totalCotista) + 'h');
+      resultEl.textContent = lines.join('\n');
+      confirmBtn.style.display = '';
+    }catch(err){
+      resultEl.textContent = 'Erro ao processar: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function confirmUpload(){
+  if(!_uploadParsed){ toast('Nenhum dado para aplicar.','err'); return; }
+  data[curMonth].horas = _uploadParsed;
+  uploadedMonths.add(curMonth);
+  saveLocal(); saveUploaded();
+  markUnsaved();
+  closeUpload();
+  renderAll();
+  toast('Dados de ' + MONTHS[curMonth] + ' atualizados via upload!','ok');
+}
+
+</script>
 <script>
 const PWD_HASH='57ac534744939621dbf1e268a5a966bc83072af62a937202673bab2708a5cffd';
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbySnlOTazq9Wl0C10rH_oE5NGc2kfXviJK7ie9yi7A6QXJ_Y9Vt3I9Y5Y9WoKt5Y8My/exec';
@@ -708,22 +895,42 @@ function renderOverview(){
 /* ── RENDER MONTH ── */
 // Definição das abas de aeronaves
 var HTABS=[
-  {id:'geral', label:'Geral', filter:null},
-  {id:'mc01',  label:'MC-01', filter:['PS-LOM','PS-SFE','PS-SFI','PS-SFH']},
-  {id:'colt',  label:'COLT',  filter:['PS-SFJ','PS-SFL']},
-  {id:'sim',   label:'Simulador', filter:['AATD SJK','AATD CPQ']}
+  {id:'geral',    label:'Geral',      filter:null},
+  {id:'mc01',     label:'MC-01',      filter:['PS-LOM','PS-SFE','PS-SFI','PS-SFH']},
+  {id:'colt',     label:'COLT',       filter:['PS-SFJ','PS-SFL']},
+  {id:'sira',     label:'SIRA',       filter:['PS-SFP']},
+  {id:'sim',      label:'Simulador',  filter:['AATD SJK','AATD CPQ']},
+  {id:'cotista',  label:'Cotista',    filter:['PS-LOM','PS-SFE','PS-SFI','PS-SFH'], cotista:true}
 ];
 var curHTab='geral';
+
+// Aeronave → base mapping
+var AERO_BASE={
+  'PS-LOM':'SJK','PS-SFE':'SJK','PS-SFH':'SJK','PS-SFI':'SJK',
+  'PS-SFJ':'CPQ','PS-SFL':'CPQ',
+  'PS-SFP':'SJK',
+  'SM-SJK':'SJK','SM-CPQ':'CPQ',
+  'AATD SJK':'SJK','AATD CPQ':'CPQ'
+};
+// Aeronaves válidas para o upload
+var AERO_VALIDAS=['PS-LOM','PS-SFE','PS-SFH','PS-SFI','PS-SFJ','PS-SFL','PS-SFP','SM-SJK','SM-CPQ'];
+var AERO_MC01=['PS-LOM','PS-SFE','PS-SFH','PS-SFI'];
+var AERO_EXCLUIR_COTISTA=['VOO DE INCENTIVO','VOO ADMINISTRATIVO - SAFE'];
+// Flag: mês foi populado via upload (horas somente leitura)
+var uploadedMonths=new Set();
+try{var _um=localStorage.getItem('safe_uploaded');if(_um)uploadedMonths=new Set(JSON.parse(_um));}catch(e){}
+function saveUploaded(){try{localStorage.setItem('safe_uploaded',JSON.stringify([...uploadedMonths]));}catch(e){}}
 
 function renderMonth(){
   var area=document.getElementById('content-area');
   var ro=!isEditable(curMonth);
+  var roHoras=!horasEditable(curMonth);
   var leg=function(c,t){return '<span style="font-size:10px;color:var(--text3);font-family:Geist Mono,monospace;display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:2px;background:'+c+';display:inline-block"></span>'+t+'</span>';};
   area.innerHTML=
     '<div class="kpi-strip" id="kpi-strip"></div>'+
     '<div class="grid-2">'+
       '<div class="panel" id="horas-panel">'+
-        '<div class="ph"><span class="ph-title">Horas voadas</span></div>'+
+        '<div class="ph"><span class="ph-title">Horas voadas</span>'+(roHoras?'':'<button class="ph-action" onclick="openUpload()">↑ Upload Excel</button>')+'</div>'+
         '<div class="htabs" id="htabs-bar"></div>'+
         '<table><thead><tr><th>Base</th><th>Tipo</th><th class="r">Horas</th><th id="th-del"></th></tr></thead><tbody id="htbody"></tbody></table>'+
       '</div>'+
@@ -764,8 +971,21 @@ function switchHTab(id){
 function getFilteredRows(){
   var tab=HTABS.find(function(t){return t.id===curHTab;});
   if(!tab||!tab.filter)return{rows:gm().horas,filtered:false};
+  if(tab.cotista){
+    // Cotista: só MC01, exclui incentivo/admin/vazio — usa campo cotista_horas
+    var rows=gm().horas.filter(function(r){return tab.filter.indexOf(r.tipo)>=0;});
+    // Map to cotista hours
+    var cRows=rows.map(function(r){return{base:r.base,tipo:r.tipo,horas:r.cotista_horas!=null?r.cotista_horas:r.horas};});
+    return{rows:cRows,filtered:true,cotista:true};
+  }
   var rows=gm().horas.filter(function(r){return tab.filter.indexOf(r.tipo)>=0;});
   return{rows:rows,filtered:true};
+}
+
+// Horas editáveis apenas se mês editável E não foi populado via upload
+function horasEditable(mi){
+  if(mi==null)mi=curMonth;
+  return isEditable(mi)&&!uploadedMonths.has(mi);
 }
 
 function renderHTableFiltered(){
@@ -774,7 +994,7 @@ function renderHTableFiltered(){
   var tb=document.getElementById('htbody');
   if(!tb)return;
   tb.innerHTML='';
-  var ro=!isEditable(curMonth)||res.filtered;
+  var ro=!horasEditable(curMonth)||res.filtered;
   rows.forEach(function(row,i){
     var tr=document.createElement('tr');
     if(ro){
