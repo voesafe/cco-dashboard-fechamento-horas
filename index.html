@@ -523,7 +523,8 @@ function processUploadFile(file){
         var aero = String(row[colAero]||'').trim().toUpperCase();
         // Normalize
         aero = aero.replace('SM-CPQ (CAMPINAS)','SM-CPQ').replace('SM-SJK (SAO JOSE DOS CAMPOS)','SM-SJK')
-                   .replace('SM-SJK (SÃO JOSÉ DOS CAMPOS)','SM-SJK');
+                   .replace('SM-SJK (SÃO JOSÉ DOS CAMPOS)','SM-SJK')
+                   .replace('SM-CPQ (CAMPINAS)','SM-CPQ');
         if(AERO_VALIDAS_UP.indexOf(aero)<0) return;
         var h = parseFloat(String(row[colHoras]||'0').replace(',','.')) || 0;
         horasPorAero[aero] += h;
@@ -584,7 +585,7 @@ function confirmUpload(){
 const PWD_HASH='57ac534744939621dbf1e268a5a966bc83072af62a937202673bab2708a5cffd';
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbySnlOTazq9Wl0C10rH_oE5NGc2kfXviJK7ie9yi7A6QXJ_Y9Vt3I9Y5Y9WoKt5Y8My/exec';
 const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const DEF_HORAS=[{base:'SJK',tipo:'PS-LOM',horas:0},{base:'SJK',tipo:'PS-SFE',horas:0},{base:'SJK',tipo:'PS-SFI',horas:0},{base:'SJK',tipo:'PS-SFH',horas:0},{base:'SJK',tipo:'AATD SJK',horas:0},{base:'CPQ',tipo:'PS-SFJ',horas:0},{base:'CPQ',tipo:'PS-SFL',horas:0},{base:'CPQ',tipo:'AATD CPQ',horas:0}];
+const DEF_HORAS=[{base:'SJK',tipo:'PS-LOM',horas:0},{base:'SJK',tipo:'PS-SFE',horas:0},{base:'SJK',tipo:'PS-SFI',horas:0},{base:'SJK',tipo:'PS-SFH',horas:0},{base:'SJK',tipo:'SM-SJK',horas:0},{base:'CPQ',tipo:'PS-SFJ',horas:0},{base:'CPQ',tipo:'PS-SFL',horas:0},{base:'CPQ',tipo:'SM-CPQ',horas:0}];
 const DEF_MET=[{metrica:'Número de Cheques',valor:0},{metrica:'Número de Voos Solos',valor:0},{metrica:'Alunos Novos',valor:0},{metrica:'Alunos Ativos CPQ - PP',valor:0},{metrica:'Alunos Ativos CPQ - PC',valor:0},{metrica:'Alunos Ativos CPQ - INVA',valor:0},{metrica:'Alunos Ativos SJK - PP',valor:0},{metrica:'Alunos Ativos SJK - PC',valor:0},{metrica:'Alunos Ativos SJK - INVA',valor:0},{metrica:'Alunos Ativos SJK - Contínuo',valor:0},{metrica:'Alunos Ativos CPQ - Contínuo',valor:0}];
 
 let curMonth=0,curTab='overview',data={},cfg={scriptUrl:SCRIPT_URL},charts={};
@@ -639,6 +640,11 @@ function initApp(){
     // Descarta métricas corrompidas (nome vazio ou numérico)
     const corrupt=data[i].metricas.every(m=>!m.metrica||String(m.metrica).trim()===''||!isNaN(m.metrica));
     if(corrupt)data[i].metricas=JSON.parse(JSON.stringify(DEF_MET));
+    // Migra nomes antigos de simuladores para padrão CAVOK
+    data[i].horas.forEach(function(r){
+      if(r.tipo==='AATD SJK')r.tipo='SM-SJK';
+      if(r.tipo==='AATD CPQ')r.tipo='SM-CPQ';
+    });
   }
   window.addEventListener('beforeunload',e=>{if(unsavedMonths.size>0){e.preventDefault();e.returnValue='';}});
   renderNav();showTab('overview');loadAllMonths();
@@ -899,7 +905,7 @@ var HTABS=[
   {id:'mc01',     label:'MC-01',      filter:['PS-LOM','PS-SFE','PS-SFI','PS-SFH']},
   {id:'colt',     label:'COLT',       filter:['PS-SFJ','PS-SFL']},
   {id:'sira',     label:'SIRA',       filter:['PS-SFP']},
-  {id:'sim',      label:'Simulador',  filter:['AATD SJK','AATD CPQ']},
+  {id:'sim',      label:'Simulador',  filter:['SM-SJK','SM-CPQ']},
   {id:'cotista',  label:'Cotista',    filter:['PS-LOM','PS-SFE','PS-SFI','PS-SFH'], cotista:true}
 ];
 var curHTab='geral';
@@ -910,7 +916,7 @@ var AERO_BASE={
   'PS-SFJ':'CPQ','PS-SFL':'CPQ',
   'PS-SFP':'SJK',
   'SM-SJK':'SJK','SM-CPQ':'CPQ',
-  'AATD SJK':'SJK','AATD CPQ':'CPQ'
+  'SM-SJK':'SJK','SM-CPQ':'CPQ'
 };
 // Aeronaves válidas para o upload
 var AERO_VALIDAS=['PS-LOM','PS-SFE','PS-SFH','PS-SFI','PS-SFJ','PS-SFL','PS-SFP','SM-SJK','SM-CPQ'];
