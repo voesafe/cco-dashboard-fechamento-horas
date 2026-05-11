@@ -936,7 +936,7 @@ function renderMonth(){
     '<div class="kpi-strip" id="kpi-strip"></div>'+
     '<div class="grid-2">'+
       '<div class="panel" id="horas-panel">'+
-        '<div class="ph"><span class="ph-title">Horas voadas</span>'+(roHoras?'':'<button class="ph-action" onclick="openUpload()">↑ Upload Excel</button>')+'</div>'+
+        '<div class="ph"><span class="ph-title">Horas voadas</span>'+((!isEditable(curMonth))?'':'<button class="ph-action" onclick="openUpload()">↑ Upload Excel</button>')+'</div>'+
         '<div class="htabs" id="htabs-bar"></div>'+
         '<table><thead><tr><th>Base</th><th>Tipo</th><th class="r">Horas</th><th id="th-del"></th></tr></thead><tbody id="htbody"></tbody></table>'+
       '</div>'+
