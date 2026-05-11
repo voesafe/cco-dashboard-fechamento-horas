@@ -699,7 +699,14 @@ async function fetchMonth(mi,silent=false){
     lastRaw[mi]=j;
     if(!j.ok){monthLoading.delete(mi);renderNavBtn(mi);return'empty';}
     var horasOk=Array.isArray(j.horas)&&j.horas.length>0;
-    if(horasOk)data[mi].horas=j.horas.map(function(x){return{base:String(x.base||'SJK'),tipo:String(x.tipo||''),horas:parseFloat(x.horas)||0};});
+    if(horasOk)data[mi].horas=j.horas.map(function(x){
+      return{
+        base:String(x.base||'SJK'),
+        tipo:String(x.tipo||''),
+        horas:parseFloat(x.horas)||0,
+        cotista_horas:x.cotista_horas!=null?parseFloat(x.cotista_horas):null
+      };
+    });
     if(Array.isArray(j.metricas)&&j.metricas.length>0){
       var mets=j.metricas.filter(function(x){return x.metrica&&String(x.metrica).trim()!=='';});
       if(mets.length>0)data[mi].metricas=mets.map(function(x){return{metrica:String(x.metrica).trim(),valor:parseFloat(x.valor)||0};});
