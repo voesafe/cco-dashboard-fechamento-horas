@@ -512,7 +512,7 @@ function processUploadFile(file){
       };
       var AERO_VALIDAS_UP = Object.keys(AERO_BASE_MAP);
       var MC01_UP = ['PS-LOM','PS-SFE','PS-SFH','PS-SFI'];
-      var EXCLUIR_COTISTA = ['VOO DE INCENTIVO','VOO ADMINISTRATIVO - SAFE'];
+      var EXCLUIR_COTISTA = ['VOO ADMINISTRATIVO - SAFE'];
 
       // Aggregate horas por aeronave (geral)
       var horasPorAero = {};
@@ -928,7 +928,7 @@ var AERO_BASE={
 // Aeronaves válidas para o upload
 var AERO_VALIDAS=['PS-LOM','PS-SFE','PS-SFH','PS-SFI','PS-SFJ','PS-SFL','PS-SFP','SM-SJK','SM-CPQ'];
 var AERO_MC01=['PS-LOM','PS-SFE','PS-SFH','PS-SFI'];
-var AERO_EXCLUIR_COTISTA=['VOO DE INCENTIVO','VOO ADMINISTRATIVO - SAFE'];
+var AERO_EXCLUIR_COTISTA=['VOO ADMINISTRATIVO - SAFE'];
 // Flag: mês foi populado via upload (horas somente leitura)
 var uploadedMonths=new Set();
 try{var _um=localStorage.getItem('safe_uploaded');if(_um)uploadedMonths=new Set(JSON.parse(_um));}catch(e){}
